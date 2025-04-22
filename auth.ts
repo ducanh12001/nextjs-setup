@@ -11,27 +11,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         try {
-          if (!credentials) {
+          if (!credentials?.email || !credentials?.password) {
             return null;
           }
 
-          const res = await fetch('', {
+          const API_URL =
+            process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+          const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             body: JSON.stringify(credentials),
             headers: { 'Content-Type': 'application/json' },
           });
 
-          const data = await res.json();
-
-          if (res.ok && data) {
-            return data;
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'Sign-in failed');
           }
 
-          return null;
+          const data = await res.json();
+          return data;
         } catch (error) {
-          throw new Error(
-            JSON.stringify({ errors: 'Authorize error', status: false }),
-          );
+          console.error('Authorize error:', error);
+          return null;
         }
       },
     }),

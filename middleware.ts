@@ -2,7 +2,7 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-const authRoutes = ['sign-in', 'sign-up'];
+const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/dashboard'];
 const adminRoutes = ['/admin'];
 
@@ -24,14 +24,14 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
-  if (adminRoutes.includes(pathname)) {
+  if (adminRoutes.some((route) => pathname.startsWith(route))) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/sign-in', req.url));
     }
 
-    // if (user.role !== 'admin') {
-    //   return NextResponse.redirect(new URL('/', req.url));
-    // }
+    if (auth?.user?.role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
 
   return NextResponse.next();

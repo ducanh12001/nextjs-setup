@@ -1,5 +1,3 @@
-'use client';
-
 import { checkIsAuthenticated } from '@/lib/auth/checkIsAuthenticated';
 import { redirect } from 'next/navigation';
 
