@@ -3,14 +3,17 @@ type NextFetchRequestConfig = {
   tags?: string[];
 };
 
-interface FetchAPIOptions {
+interface FetchAPIOptions<TBody = unknown> {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   authToken?: string;
-  body?: any;
+  body?: TBody;
   next?: NextFetchRequestConfig;
 }
 
-export async function fetchAPI(url: string, options: FetchAPIOptions) {
+export async function fetchAPI<TResponse, TBody = unknown>(
+  url: string,
+  options: FetchAPIOptions<TBody>,
+): Promise<TResponse> {
   const { method, authToken, body, next } = options;
 
   const headers: RequestInit & { next?: NextFetchRequestConfig } = {
@@ -26,17 +29,28 @@ export async function fetchAPI(url: string, options: FetchAPIOptions) {
   try {
     const response = await fetch(url, headers);
     const contentType = response.headers.get('content-type');
-    if (
-      contentType &&
-      contentType.includes('application/json') &&
-      response.ok
-    ) {
-      return await response.json();
-    } else {
-      return { status: response.status, statusText: response.statusText };
+    if (!response.ok) {
+      let errorMessage = response.statusText;
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage =
+          errorData.message || errorData.error || response.statusText;
+      }
+      throw new Error(
+        JSON.stringify({
+          status: response.status,
+          statusText: response.statusText,
+          message: errorMessage,
+        }),
+      );
     }
+
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+    throw new Error('Response is not JSON');
   } catch (error) {
-    console.error(`Error ${method} data:`, error);
+    console.error(`Error ${method} data to ${url}:`, error);
     throw error;
   }
 }
